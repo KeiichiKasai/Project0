@@ -1,0 +1,110 @@
+go基础
+(a).People结构体内成员未公开，json.Unmarshal无法读取到。将name改为Name即可
+(b).在执行第二个输出指令时程序已经停止报错
+并发相关
+(a).若main函数比go routine执行得快，则还未上锁就开始解锁，因此引发报错
+(b).func main() {
+	C := make(chan int, 1)
+	go func() {
+		fmt.Println("下山的路又堵起了")
+		C <- 0
+	}()
+	<-C
+}
+(c).func A(C chan int) {
+	fmt.Println("hello")
+	C <- 0
+}
+func main() {
+	C := make(chan int, 10)
+	go A(C)
+	go A(C)
+	go A(C)
+	go A(C)
+	go A(C)
+	go A(C)
+	go A(C)
+	go A(C)
+	go A(C)
+	go A(C)
+	for i := 0; i < 10; i++ {
+		<-C
+	}
+}
+(d).
+//放入百万个数
+func put(A chan int) {
+	for i := 0; i < 1000000; i++ {
+		A <- i
+	}
+	close(A)
+}
+//筛选素数
+func chose(A chan int, B chan int, C chan int) {
+	flag := true
+	for {
+		n, ok := <-A
+		if !ok {
+			break
+		}
+		for i := 2; i < n; i++ {
+			if n%i == 0 {
+				flag = false
+				break
+			}
+		}
+		if flag {
+			B <- n
+		}
+	}
+	C <- 0
+}
+func main() {
+	number := make(chan int, 1000000)//总数
+	pure_number := make(chan int, 1000000)//素数
+	dead := make(chan int, 4)//协程数
+	go put(number)
+	for i := 0; i < 4; i++ {
+		go chose(number, pure_number, dead)
+	}
+	for i := 0; i < 4; i++ {
+		<-dead
+	}
+	close(dead)
+	for {
+		result, ok := <-pure_number
+		if !ok {
+			break
+		}
+		fmt.Printf("%d ", result)
+	}
+	close(pure_number)
+}
+数据库相关
+(a)
+create table emp_salary(
+	emp_id int primary key,
+	emp_name varchar(20),
+	emp_gender char(1),
+	work_station varchar(50),
+	deal_work int,
+	work_time varchar(50)，
+	tax int，
+	late_count int
+);
+(b).
+一、主键是唯一的，不可重复；外键可重复。如同身份证与姓名的关系。
+二、主键作用：保证数据完整性。外键作用：与其他表建立联系
+编码能力题
+思路：用链表来做。
+首先定义一个结构体 
+type room  struct{
+        has_stairs int,
+        code int,
+        room* next
+}
+通过输入构造N个含M个结点首尾相连的链表
+输入进入的房间号后
+获取room->code
+通过while循环进行上楼操作
+以此类推，将所有code记录求和即可得到
